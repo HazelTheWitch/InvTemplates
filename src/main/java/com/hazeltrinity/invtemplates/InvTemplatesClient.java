@@ -18,8 +18,10 @@ public class InvTemplatesClient implements ClientModInitializer {
         InvTemplates.LOGGER.info("Writing Config Back for Formatting");
         try {
             TEMPLATE.writeToJSON("InvTemplates.json");
+            InvTemplates.LOGGER.info("Config Written Successfully");
         } catch (IOException e) {
             InvTemplates.LOGGER.error("Could not write to config file");
         }
+
     }
 }

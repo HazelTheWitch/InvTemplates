@@ -4,9 +4,10 @@
   "package": "com.hazeltrinity.invtemplates.mixin",
   "compatibilityLevel": "JAVA_16",
   "mixins": [
+
   ],
   "client": [
-    "ExampleMixin"
+    "MiddleClickSort"
   ],
   "injectors": {
     "defaultRequire": 1

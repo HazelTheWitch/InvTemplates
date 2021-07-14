@@ -1,49 +1,35 @@
 package com.hazeltrinity.invtemplates.config;
 
 import com.google.gson.annotations.Expose;
-import com.hazeltrinity.invtemplates.config.impl.EmptyKeyItem;
-import com.hazeltrinity.invtemplates.config.impl.ItemKeyItem;
-import com.hazeltrinity.invtemplates.config.impl.MultiItemKeyItem;
-import com.hazeltrinity.invtemplates.config.impl.sorting.SortingKeyItem;
-import com.hazeltrinity.invtemplates.config.impl.sorting.SortingType;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 
 public class KeyItem {
-    public enum Type {
-        Sorting,
-        Empty,
-        Item,
-        MultiItem
+    @Expose(serialize = false)
+    public String type;
+
+    public KeyItem(String type) {
+        this.type = type;
     }
-
-    @Expose(serialize = false)
-    public Type type;
-
-    // SortingKeyItem
-    @Expose(serialize = false)
-    public SortingType[] sortingTypes;
-
-    // ItemKeyItem
-    @Expose(serialize = false)
-    public String identifier;
-
-    // MultiItemKeyItem
-    @Expose(serialize = false)
-    public String[] identifiers;
 
     public void verify() {
 
     }
 
-    public static KeyItem convert(KeyItem input) {
-        if (input.type == null) {
-            return input;
-        }
+    /**
+     * Get a sorting key representing infinity.
+     * @return an infinite SortingKey
+     */
+    public SortingKey<?> infinity() {
+        return new SortingKey<Double>();
+    }
 
-        return switch (input.type) {
-            case Sorting -> new SortingKeyItem(input.sortingTypes);
-            case Empty -> new EmptyKeyItem();
-            case Item -> new ItemKeyItem(input.identifier);
-            case MultiItem -> new MultiItemKeyItem(input.identifiers);
-        };
+    /**
+     * Get the value of an ItemStack
+     * @param stack the stack
+     * @return the value of the stack
+     */
+    public SortingKey<?> valueOf(ItemStack stack) {
+        return new SortingKey<Double>(0d);
     }
 }

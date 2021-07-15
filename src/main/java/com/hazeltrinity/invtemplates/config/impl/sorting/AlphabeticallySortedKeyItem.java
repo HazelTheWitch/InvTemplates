@@ -19,6 +19,6 @@ public class AlphabeticallySortedKeyItem extends KeyItem {
     }
 
     public SortingKey<String> valueOf(ItemStack stack) {
-        return new SortingKey<>(stack.getName().asString());
+        return new SortingKey<>(stack.getName().getString());
     }
 }

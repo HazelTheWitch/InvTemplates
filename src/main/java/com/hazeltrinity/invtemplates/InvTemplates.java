@@ -18,15 +18,17 @@ public class InvTemplates implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Initializing");
 		ServerSidePacketRegistryImpl.INSTANCE.register(SORT_PACKET_ID, (packetContext, attachedData) -> {
-			String json = attachedData.readString();
+			packetContext.getTaskQueue().execute(() -> {
+				String json = attachedData.readString();
 
-			try {
-				InvTemplate template = InvTemplate.loadFromJSONString(json);
-				template.verify();
-				template.sort(packetContext.getPlayer());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+				try {
+					InvTemplate template = InvTemplate.loadFromJSONString(json);
+					template.verify();
+					template.sort(packetContext.getPlayer());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
 		});
 	}
 }

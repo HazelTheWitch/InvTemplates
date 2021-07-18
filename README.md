@@ -1,5 +1,7 @@
 # InvTemplates
 
+# This mod is highly experimental, be warned.
+
 ## Description
 
 Highly customizable inventory sorting templates with the click of a button. To sort the player's inventory

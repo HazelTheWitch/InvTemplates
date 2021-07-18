@@ -7,9 +7,13 @@ import com.google.gson.annotations.Expose;
 import com.hazeltrinity.invtemplates.InvTemplates;
 import com.hazeltrinity.invtemplates.config.impl.*;
 import com.hazeltrinity.invtemplates.config.impl.sorting.AlphabeticallySortedKeyItem;
+import com.hazeltrinity.invtemplates.inventory.KeySlot;
+import com.hazeltrinity.invtemplates.inventory.SortableInventory;
+import com.hazeltrinity.invtemplates.inventory.SortedInventory;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
@@ -61,162 +65,24 @@ public class InvTemplate {
     @Expose(serialize = true)
     public String priorities = " SPAsBHFabt$";
 
-    public void sort(PlayerEntity player) {
-        PlayerInventory inventory = player.getInventory();
+    public SortableInventory sort() {
+        HashMap<Integer, KeySlot> slots = new HashMap<>();
 
-        ArrayList<ItemStack> items = new ArrayList<>(37);
+        for (int row = 3; row >= 0; row --) {
+            int length = row == 3 ? 10 : 9;
 
-        // Save armor from wipe
-        List<ItemStack> armor = List.copyOf(inventory.armor);
+            for (int column = 0; column < length; column++) {
+                int slot = slotNumber(row, column);
 
-        ItemStack item;
-        for (int i = 0; i < PlayerInventory.MAIN_SIZE; i ++) {
-            item = inventory.main.get(i);
+                char charKey = templateInventory[row].charAt(column);
 
-            if (item != ItemStack.EMPTY) {
-                items.add(item);
+                KeySlot keySlot = new KeySlot(key.get(charKey), priorities.indexOf(charKey));
+
+                slots.put(slot, keySlot);
             }
         }
 
-        item = inventory.offHand.get(0);
-
-        HashMap<Item, Integer> counts = new HashMap<>();
-
-        if (item != ItemStack.EMPTY) {
-            items.add(item);
-        }
-
-        // Condense all items into stacks of max size
-
-        for (int i = 0; i < items.size(); i ++) {
-            ItemStack itemA = items.get(i);
-
-            for (int j =  i + 1; j < items.size(); j ++) {
-                ItemStack itemB = items.get(j);
-
-                if (ItemStack.canCombine(itemA, itemB)) {
-                    int M = itemA.getMaxCount();
-
-                    int x = itemA.getCount();
-                    int y = itemB.getCount();
-
-                    itemA.setCount(Math.min(x + y, M));
-                    itemB.setCount(x + y - Math.min(x + y, M));
-                }
-            }
-        }
-
-        HashSet<ItemStack> stacks = new HashSet<>();
-
-        for (ItemStack stack : items) {
-            if (stack.getCount() > 0) {
-                stacks.add(stack);
-            }
-        }
-
-        inventory.clear();
-
-        // Fill the items back up here.
-
-        /*
-         2 step process
-         1) fill all slots with what it can high prio -> low
-         2) find slots for the items which need places prio low -> high
-         */
-
-        // 1) Attempt to fill slots, bottom to top
-        fullLoop:
-        for (int i = 0; i < priorities.length(); i ++) {
-            char prioritized = priorities.charAt(i);
-            KeyItem keyItem = key.get(prioritized);
-
-            for (int row = 3; row >= 0; row --) {
-                int length = row == 3 ? 10 : 9;
-
-                for (int column = 0; column < length; column ++) {
-                    int slot = slotNumber(row, column);
-
-                    if (templateInventory[row].charAt(column) == prioritized) { // This is a prioritized slot attempt to fill
-                        ItemStack bestItem = null;
-                        SortingKey bestValue = keyItem.infinity();
-
-                        for (ItemStack stack : stacks) {
-                            SortingKey value = keyItem.valueOf(stack);
-
-                            if (!value.getPreferred()) {
-                                continue;
-                            }
-
-                            if (value.compareTo(bestValue) <= 0) {
-                                bestItem = stack;
-                                bestValue = value;
-                            }
-                        }
-
-                        if (bestItem != null) {
-                            inventory.setStack(slot, bestItem);
-                            stacks.remove(bestItem);
-                        }
-
-                        if (items.size() == 0) {
-                            break fullLoop;
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2) fill remaining slots priority low -> high
-        fullLoop:
-        for (int i = priorities.length() - 1; i >= 0; i --) {
-            char deprioritized = priorities.charAt(i);
-            KeyItem keyItem = key.get(deprioritized);
-
-            for (int row = 0; row < 4; row ++) {
-                int length = row == 3 ? 10 : 9;
-
-                for (int column = 0; column < length; column ++) {
-                    int slot = slotNumber(row, column);
-
-                    if (templateInventory[row].charAt(column) == deprioritized) { // since reverse order this is the lowest priority up until now
-                        // Get the best item for the slot, does not matter if preferred
-                        ItemStack bestItem = null;
-                        SortingKey bestValue = keyItem.infinity();
-
-                        for (ItemStack stack : stacks) {
-                            SortingKey value = keyItem.valueOf(stack);
-
-                            if (value.compareTo(bestValue) <= 0) {
-                                bestItem = stack;
-                                bestValue = value;
-                            }
-                        }
-
-                        // Fill Slot with item
-                        if (bestItem != null) {
-                            inventory.setStack(slot, bestItem);
-                            stacks.remove(bestItem);
-                        }
-
-                        if (items.size() == 0) {
-                            break fullLoop;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Put armor back where it belongs
-        for (int i = 0; i < armor.size(); i ++) {
-            inventory.armor.set(i, armor.get(i));
-        }
-
-        inventory.markDirty();
-
-        // Throw any items that didn't get sorted out just in case, should never happen but as a precautionary measure
-        for (ItemStack stack : stacks) {
-            player.dropItem(stack, true);
-        }
+        return new SortableInventory(slots);
     }
 
     private int slotNumber(int row, int column) {

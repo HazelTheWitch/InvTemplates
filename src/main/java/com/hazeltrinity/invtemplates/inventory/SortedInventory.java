@@ -32,8 +32,12 @@ public class SortedInventory {
     }
 
     public void set(int source, int destination) throws IllegalArgumentException {
-        if (destinations.containsKey(source) || destinations.containsValue(destination)) {
-            throw new IllegalArgumentException("" + source + " or " + destination + " already exists within destinations.");
+        if (destinations.containsKey(source)) {
+            throw new IllegalArgumentException("Source " + source + " already has a destination.");
+        }
+
+        if (destinations.containsValue(destination)) {
+            throw new IllegalArgumentException("Destination " + destination + " already has a source.");
         }
 
         destinations.put(source, destination);

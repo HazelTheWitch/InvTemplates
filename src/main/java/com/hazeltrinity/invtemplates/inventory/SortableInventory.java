@@ -59,25 +59,26 @@ public class SortableInventory {
 
         HashSet<Integer> completed = new HashSet<>();
 
-        if (fillSlots(sorted, inventory.size(), oldItems, true, completed))
-            fillSlots(sorted, inventory.size(), oldItems, false, completed);
+        HashMap<ItemStack, Integer> slots = new HashMap<>();
+
+        for (int i = 0; i < oldItems.size(); i ++) {
+            ItemStack stack = oldItems.get(i);
+
+            if (stack != ItemStack.EMPTY) {
+                slots.put(oldItems.get(i), i);
+            }
+        }
+
+        // TODO: rewrite with less reference, create a class to handle all of this
+        if (fillSlots(sorted, inventory.size(), oldItems, slots, true, completed))
+            fillSlots(sorted, inventory.size(), oldItems, slots, false, completed);
 
         sorted.simplify();
 
         return sorted;
     }
 
-    private boolean fillSlots(SortedInventory sorted, int size, ArrayList<ItemStack> items, boolean firstRun, HashSet<Integer> completed) {
-        HashMap<ItemStack, Integer> slots = new HashMap<>();
-
-        for (int i = 0; i < items.size(); i ++) {
-            ItemStack stack = items.get(i);
-
-            if (stack != ItemStack.EMPTY) {
-                slots.put(items.get(i), i);
-            }
-        }
-
+    private boolean fillSlots(SortedInventory sorted, int size, ArrayList<ItemStack> items, HashMap<ItemStack, Integer> slots, boolean firstRun, HashSet<Integer> completed) {
         int slot, prioIndex, targetSlot;
         for (int i = 0; i < priorities.length; i ++) {
             prioIndex = i;

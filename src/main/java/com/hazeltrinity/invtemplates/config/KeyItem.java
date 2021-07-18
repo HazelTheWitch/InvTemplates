@@ -2,7 +2,6 @@ package com.hazeltrinity.invtemplates.config;
 
 import com.google.gson.annotations.Expose;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 
 public class KeyItem {
     @Expose(serialize = false)

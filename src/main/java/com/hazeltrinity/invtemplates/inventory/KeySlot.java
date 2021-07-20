@@ -17,9 +17,6 @@ public class KeySlot {
 
     private final KeyItem key;
     private final boolean ignore;
-
-
-
     private final int priority;
 
     public KeySlot() {

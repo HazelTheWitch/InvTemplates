@@ -1,6 +1,7 @@
 package com.hazeltrinity.invtemplates.inventory;
 
 import com.hazeltrinity.invtemplates.config.KeyItem;
+import com.hazeltrinity.invtemplates.config.impl.EmptyKeyItem;
 import com.hazeltrinity.invtemplates.config.impl.sorting.AlphabeticallySortedKeyItem;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;

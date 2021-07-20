@@ -1,8 +1,11 @@
 package com.hazeltrinity.invtemplates.inventory;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.hazeltrinity.invtemplates.config.KeyItem;
 import com.hazeltrinity.invtemplates.config.SortingKey;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import java.util.*;
@@ -11,6 +14,16 @@ import java.util.*;
  * An inventory which has slots with KeyItems used to sort inventories.
  */
 public class SortableInventory {
+    private class ValidItems {
+        public ArrayList<ItemStack> preferred;
+        public ArrayList<ItemStack> allowed;
+
+        public ValidItems(ArrayList<ItemStack> preferred, ArrayList<ItemStack> allowed) {
+            this.preferred = preferred;
+            this.allowed = allowed;
+        }
+    }
+
     private final HashMap<Integer, KeySlot> inventorySlots;
     private final int[] priorities;
 
@@ -53,120 +66,228 @@ public class SortableInventory {
             return null;
         }
 
-        SortedInventory sorted = new SortedInventory();
+        HashMap<Integer, Integer> sourceToDestination = new HashMap<>();
 
-        ArrayList<ItemStack> oldItems = clumpInventory(Helper.inventoryToArrayList(inventory, true));
+        /*
+          Works through a backtracking algorithm.
 
-        HashSet<Integer> completed = new HashSet<>();
+          First we clump items together, this step is also done server side so we can expect the same output.
+         */
 
-        HashMap<ItemStack, Integer> slots = new HashMap<>();
+        ArrayList<ItemStack> itemsList = clumpInventory(Helper.inventoryToArrayList(inventory, true));
 
-        for (int i = 0; i < oldItems.size(); i ++) {
-            ItemStack stack = oldItems.get(i);
+        // Create a mapping of item stacks to slots
+        HashMap<ItemStack, Integer> stacks = new HashMap<>();
 
-            if (stack != ItemStack.EMPTY) {
-                slots.put(oldItems.get(i), i);
+        for (int slot = 0; slot < itemsList.size(); slot ++) {
+            if (itemsList.get(slot) != ItemStack.EMPTY)
+                stacks.put(itemsList.get(slot), slot);
+        }
+
+        // Convert create a set of remaining items to place
+        HashSet<ItemStack> remainingItems = new HashSet<>(stacks.keySet());
+
+        // Create a list of valid items in each slot
+        HashMap<Integer, ValidItems> validItems = new HashMap<>();
+
+        for (int slot = 0; slot < inventory.size(); slot ++) {
+            KeySlot keySlot = inventorySlots.get(slot);
+
+            if (keySlot != null && !keySlot.ignore()) {
+                ArrayList<ItemStack> valid = new ArrayList<>();
+
+                for (ItemStack stack : remainingItems) {
+                    if (stack != ItemStack.EMPTY && inventory.isValid(slot, stack))
+                        valid.add(stack);
+                }
+
+                validItems.put(slot, sortedByKeySlot(keySlot, valid));
+            } else {
+                remainingItems.remove(inventory.getStack(slot));
             }
         }
 
-        // TODO: rewrite with less reference, create a class to handle all of this
-        if (fillSlots(sorted, inventory.size(), oldItems, slots, true, completed))
-            fillSlots(sorted, inventory.size(), oldItems, slots, false, completed);
+        // Order slots based on priority and location
+        ArrayDeque<Integer> slotOrder = new ArrayDeque<>(inventory.size());
 
-        sorted.simplify();
-
-        return sorted;
-    }
-
-    private boolean fillSlots(SortedInventory sorted, int size, ArrayList<ItemStack> items, HashMap<ItemStack, Integer> slots, boolean firstRun, HashSet<Integer> completed) {
-        int slot, prioIndex, targetSlot;
-        for (int i = 0; i < priorities.length; i ++) {
-            prioIndex = i;
-            if (!firstRun) {
-                prioIndex = priorities.length - 1 - prioIndex;
-            }
-
-            for (int j = 0; j < size; j ++) {
-                slot = j;
-                if (!firstRun) {
-                    slot = size - 1 - slot;
-                }
-
-                if (completed.contains(slot)) {
-                    continue;
-                }
-
-                targetSlot = fillSlot(slots, firstRun, slot, priorities[prioIndex]);
-
-                if (targetSlot >= 0 && items.get(targetSlot) != ItemStack.EMPTY) {
-                    sorted.set(targetSlot, slot);
-
-                    if (slots.isEmpty()) {
-                        return false;
-                    }
-
-                    completed.add(slot);
+        for (int priority : priorities) {
+            for (int slot = 0; slot < inventory.size(); slot ++) {
+                KeySlot keySlot = inventorySlots.get(slot);
+                if (keySlot != null && !keySlot.ignore() && keySlot.getPriority() == priority) {
+                    slotOrder.add(slot);
                 }
             }
         }
 
-        return true;
+        fillSlot(sourceToDestination, stacks, remainingItems, validItems, slotOrder);
+
+        return new SortedInventory(sourceToDestination);
     }
 
-    /**
-     * Fill a given slot with an item from stacks.
-     * @param stacks the items remaining to place
-     * @param requirePreferred true if this slot needs a preferred item
-     * @param slot the slot index to fill
-     * @return the index of the slot to pull from or -1 if it could not find an item
-     */
-    private int fillSlot(HashMap<ItemStack, Integer> stacks, boolean requirePreferred, int slot, int priority) {
-        // We do not have a slot configured here so just leave the item
-        if (!inventorySlots.containsKey(slot)) {
-            ItemStack stack = itemStackFromSlots(stacks, slot);
-            if (stack != null)
-                stacks.remove(stack, slot);
-            return slot;
+    private boolean fillSlot(HashMap<Integer, Integer> sourceToDestination,
+                             HashMap<ItemStack, Integer> stacks,
+                             HashSet<ItemStack> remainingItems,
+                             HashMap<Integer, ValidItems> validItems,
+                             ArrayDeque<Integer> slotOrder) {
+        if (remainingItems.size() == 0) {
+            return true;
         }
 
-        KeySlot keySlot = inventorySlots.get(slot);
+        int slot = slotOrder.removeFirst();
 
-        if (keySlot.ignore()) {
-            ItemStack stack = itemStackFromSlots(stacks, slot);
-            if (stack != null)
-                stacks.remove(stack, slot);
-            return slot;
-        }
+        for (ItemStack stack : validItems.get(slot).preferred) {
+            if (remainingItems.contains(stack)) {
+                int itemSlot = stacks.get(stack);
+                sourceToDestination.put(itemSlot, slot);
+                remainingItems.remove(stack);
 
-        if (keySlot.getPriority() != priority) {
-            return -1;
-        }
+                if (fillSlot(sourceToDestination, stacks, remainingItems, validItems, slotOrder)) {
+                    return true;
+                }
 
-        // Get the best item from the slot
-        ItemStack bestItem = null;
-        SortingKey bestValue = keySlot.getKey().infinity();
-
-        for (ItemStack stack : stacks.keySet()) {
-            SortingKey value = keySlot.getKey().valueOf(stack);
-
-            if (requirePreferred && !value.getPreferred()) {
-                continue;
-            }
-
-            if (value.compareTo(bestValue) <= 0) {
-                bestItem = stack;
-                bestValue = value;
+                sourceToDestination.remove(itemSlot, slot);
+                remainingItems.add(stack);
             }
         }
 
-        if (bestItem != null) {
-            int s = stacks.get(bestItem);
-            stacks.remove(bestItem, s);
-            return s;
+        if (fillSlot(sourceToDestination, stacks, remainingItems, validItems, slotOrder))
+            return true;
+
+        slotOrder.addFirst(slot);
+        slot = slotOrder.removeLast();
+
+        for (ItemStack stack : validItems.get(slot).allowed) {
+            if (remainingItems.contains(stack)) {
+                int itemSlot = stacks.get(stack);
+                sourceToDestination.put(itemSlot, slot);
+                remainingItems.remove(stack);
+
+                if (fillSlot(sourceToDestination, stacks, remainingItems, validItems, slotOrder)) {
+                    return true;
+                }
+
+                sourceToDestination.remove(itemSlot, slot);
+                remainingItems.add(stack);
+            }
         }
 
-        return -1;
+        return false;
     }
+
+//        SortedInventory sorted = new SortedInventory();
+//
+//        ArrayList<ItemStack> oldItems = clumpInventory(Helper.inventoryToArrayList(inventory, true));
+//
+//        HashSet<Integer> completed = new HashSet<>();
+//
+//        HashMap<ItemStack, Integer> slots = new HashMap<>();
+//
+//        for (int i = 0; i < oldItems.size(); i ++) {
+//            ItemStack stack = oldItems.get(i);
+//
+//            if (stack != ItemStack.EMPTY) {
+//                slots.put(oldItems.get(i), i);
+//            }
+//        }
+//
+//        // TODO: rewrite with less reference, create a class to handle all of this
+//        if (fillSlots(sorted, inventory.size(), oldItems, slots, true, completed))
+//            fillSlots(sorted, inventory.size(), oldItems, slots, false, completed);
+//
+//        sorted.simplify();
+//
+//        return sorted;
+//    }
+
+//    private boolean fillSlots(SortedInventory sorted, int size, ArrayList<ItemStack> items, HashMap<ItemStack, Integer> slots, boolean firstRun, HashSet<Integer> completed) {
+//        int slot, prioIndex, targetSlot;
+//        for (int i = 0; i < priorities.length; i ++) {
+//            prioIndex = i;
+//            if (!firstRun) {
+//                prioIndex = priorities.length - 1 - prioIndex;
+//            }
+//
+//            for (int j = 0; j < size; j ++) {
+//                slot = j;
+//                if (!firstRun) {
+//                    slot = size - 1 - slot;
+//                }
+//
+//                if (completed.contains(slot)) {
+//                    continue;
+//                }
+//
+//                targetSlot = fillSlot(slots, firstRun, slot, priorities[prioIndex]);
+//
+//                if (targetSlot >= 0 && items.get(targetSlot) != ItemStack.EMPTY) {
+//                    sorted.set(targetSlot, slot);
+//
+//                    if (slots.isEmpty()) {
+//                        return false;
+//                    }
+//
+//                    completed.add(slot);
+//                }
+//            }
+//        }
+//
+//        return true;
+//    }
+//
+//    /**
+//     * Fill a given slot with an item from stacks.
+//     * @param stacks the items remaining to place
+//     * @param requirePreferred true if this slot needs a preferred item
+//     * @param slot the slot index to fill
+//     * @return the index of the slot to pull from or -1 if it could not find an item
+//     */
+//    private int fillSlot(HashMap<ItemStack, Integer> stacks, boolean requirePreferred, int slot, int priority) {
+//        // We do not have a slot configured here so just leave the item
+//        if (!inventorySlots.containsKey(slot)) {
+//            ItemStack stack = itemStackFromSlots(stacks, slot);
+//            if (stack != null)
+//                stacks.remove(stack, slot);
+//            return slot;
+//        }
+//
+//        KeySlot keySlot = inventorySlots.get(slot);
+//
+//        if (keySlot.ignore()) {
+//            ItemStack stack = itemStackFromSlots(stacks, slot);
+//            if (stack != null)
+//                stacks.remove(stack, slot);
+//            return slot;
+//        }
+//
+//        if (keySlot.getPriority() != priority) {
+//            return -1;
+//        }
+//
+//        // Get the best item from the slot
+//        ItemStack bestItem = null;
+//        SortingKey bestValue = keySlot.getKey().infinity();
+//
+//        for (ItemStack stack : stacks.keySet()) {
+//            SortingKey value = keySlot.getKey().valueOf(stack);
+//
+//            if (requirePreferred && !value.getPreferred()) {
+//                continue;
+//            }
+//
+//            if (value.compareTo(bestValue) <= 0) {
+//                bestItem = stack;
+//                bestValue = value;
+//            }
+//        }
+//
+//        if (bestItem != null) {
+//            int s = stacks.get(bestItem);
+//            stacks.remove(bestItem, s);
+//            return s;
+//        }
+//
+//        return -1;
+//    }
 
     private ItemStack itemStackFromSlots(HashMap<ItemStack, Integer> stacks, int slot) {
         for (ItemStack stack : stacks.keySet()) {
@@ -221,5 +342,56 @@ public class SortableInventory {
         }
 
         return items;
+    }
+
+    private ValidItems sortedByKeySlot(KeySlot slot, ArrayList<ItemStack> items) { // TODO: use bestter sorting algorithm
+        ArrayList<ItemStack> preferred = new ArrayList<ItemStack>();
+        ArrayList<ItemStack> allowed = new ArrayList<ItemStack>();
+
+        HashMap<ItemStack, SortingKey> sortingKeys = new HashMap<>();
+
+        KeyItem keyItem = slot.getKey();
+
+        for (ItemStack stack : items) {
+            sortingKeys.put(stack, keyItem.valueOf(stack));
+        }
+
+        while (!sortingKeys.isEmpty()) {
+            SortingKey bestKey = keyItem.infinity();
+            ItemStack bestItem = null;
+
+            for (ItemStack stack : sortingKeys.keySet()) {
+                SortingKey other = sortingKeys.get(stack);
+                if (other.getPreferred() && other.compareTo(bestKey) <= 0) {
+                    bestKey = other;
+                    bestItem = stack;
+                }
+            }
+
+            if (bestItem == null) {
+                break;
+            }
+
+            preferred.add(bestItem);
+            sortingKeys.remove(bestItem);
+        }
+
+        while (!sortingKeys.isEmpty()) {
+            SortingKey bestKey = keyItem.infinity();
+            ItemStack bestItem = null;
+
+            for (ItemStack stack : sortingKeys.keySet()) {
+                SortingKey other = sortingKeys.get(stack);
+                if (other.compareTo(bestKey) <= 0) {
+                    bestKey = other;
+                    bestItem = stack;
+                }
+            }
+
+            allowed.add(bestItem);
+            sortingKeys.remove(bestItem);
+        }
+
+        return new ValidItems(preferred, allowed);
     }
 }

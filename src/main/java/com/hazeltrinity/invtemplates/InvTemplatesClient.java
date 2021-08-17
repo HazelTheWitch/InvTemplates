@@ -84,18 +84,14 @@ public class InvTemplatesClient implements ClientModInitializer {
             if (sortTimeLeft > 0)
                 sortTimeLeft -= 1;
 
-            if (reloadTimeLeft == 0 && doReloadConfig) {
+            if (canReload() && doReloadConfig) {
                 InvTemplates.LOGGER.info("Reloading Config");
                 reloadConfig();
                 client.inGameHud.getChatHud().addMessage(new TranslatableText("invtemplates.chat.reloaded").formatted(Formatting.GRAY));
-
-                reloadTimeLeft = RELOAD_COOLDOWN;
             }
 
-            if (sortTimeLeft == 0 && doSortInventory) {
+            if (canSort() && doSortInventory) {
                 sortInventory(true);
-
-                sortTimeLeft = SORT_COOLDOWN;
             }
         });
     }
@@ -112,6 +108,8 @@ public class InvTemplatesClient implements ClientModInitializer {
         } catch (IOException e) {
             InvTemplates.LOGGER.error("Could not write to config file");
         }
+
+        reloadTimeLeft = RELOAD_COOLDOWN;
     }
 
     public static void sortInventory(boolean sortPlayer) {
@@ -154,8 +152,17 @@ public class InvTemplatesClient implements ClientModInitializer {
             passed.writeString(sorted.toJSONString());
 
             ClientSidePacketRegistryImpl.INSTANCE.sendToServer(SORT_PACKET_ID, passed);
+            sortTimeLeft = SORT_COOLDOWN;
         } else {
             InvTemplates.LOGGER.warn("Could not initialize sorting template or inventory");
         }
+    }
+
+    public static boolean canSort() {
+        return sortTimeLeft == 0;
+    }
+
+    public static boolean canReload() {
+        return reloadTimeLeft == 0;
     }
 }

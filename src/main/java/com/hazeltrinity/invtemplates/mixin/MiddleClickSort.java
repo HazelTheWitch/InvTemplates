@@ -35,9 +35,11 @@ public abstract class MiddleClickSort {
 		if (button == 2) { // Only do sorting on middle click
 			Slot hoveredSlot = getSlotAt(mouseX, mouseY);
 
-			InvTemplatesClient.sortInventory(hoveredSlot == null || hoveredSlot.inventory instanceof PlayerInventory);
+			if (InvTemplatesClient.canSort()) {
+				InvTemplatesClient.sortInventory(hoveredSlot == null || hoveredSlot.inventory instanceof PlayerInventory);
 
-			cir.setReturnValue(true);
+				cir.setReturnValue(true);
+			}
 		}
 	}
 }

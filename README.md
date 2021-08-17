@@ -5,8 +5,9 @@
 ## Description
 
 Highly customizable inventory sorting templates with the click of a button. To sort the player's inventory
-either middle mouse click anywhere not over a container's slot or press the bound button outside the inventory. 
-To sort a container hover over the container's slots and middle mouse click.
+either middle mouse click anywhere not over a container's slot or press the bound button (defaults to `T`) outside
+the inventory. To sort a container hover over the container's slots and middle mouse click. To reload the config from
+inside the game press the bound button (defaults to `R`).
 
 ## Configuration
 
@@ -147,7 +148,11 @@ below.
 
 ##### alphabetically-sorting
 
-Alphabetically sorted slot, prefers items starting with A going to Z.
+Alphabetically sorted slot, prefers items starting with A going to Z, then sorts by quantity.
+
+##### quantity-sorting
+
+Sorts by quantity greatest to least, then sorts alphabetically.
 
 ##### empty
 

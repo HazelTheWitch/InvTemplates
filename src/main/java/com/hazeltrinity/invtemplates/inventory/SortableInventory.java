@@ -136,18 +136,8 @@ public class SortableInventory {
         int slot = slotOrder.removeFirst();
 
         for (ItemStack stack : validItems.get(slot).preferred) {
-            if (remainingItems.contains(stack)) {
-                int itemSlot = stacks.get(stack);
-                sourceToDestination.put(itemSlot, slot);
-                remainingItems.remove(stack);
-
-                if (fillSlot(sourceToDestination, stacks, remainingItems, validItems, slotOrder)) {
-                    return true;
-                }
-
-                sourceToDestination.remove(itemSlot, slot);
-                remainingItems.add(stack);
-            }
+            if (processSlot(sourceToDestination, stacks, remainingItems, (HashMap<Integer, ValidItems>) validItems, slotOrder, slot, stack))
+                return true;
         }
 
         if (fillSlot(sourceToDestination, stacks, remainingItems, validItems, slotOrder))
@@ -157,20 +147,26 @@ public class SortableInventory {
         slot = slotOrder.removeLast();
 
         for (ItemStack stack : validItems.get(slot).allowed) {
-            if (remainingItems.contains(stack)) {
-                int itemSlot = stacks.get(stack);
-                sourceToDestination.put(itemSlot, slot);
-                remainingItems.remove(stack);
-
-                if (fillSlot(sourceToDestination, stacks, remainingItems, validItems, slotOrder)) {
-                    return true;
-                }
-
-                sourceToDestination.remove(itemSlot, slot);
-                remainingItems.add(stack);
-            }
+            if (processSlot(sourceToDestination, stacks, remainingItems, (HashMap<Integer, ValidItems>) validItems, slotOrder, slot, stack))
+                return true;
         }
 
+        return false;
+    }
+
+    private boolean processSlot(HashMap<Integer, Integer> sourceToDestination, HashMap<ItemStack, Integer> stacks, HashSet<ItemStack> remainingItems, HashMap<Integer, ValidItems> validItems, ArrayDeque<Integer> slotOrder, int slot, ItemStack stack) {
+        if (remainingItems.contains(stack)) {
+            int itemSlot = stacks.get(stack);
+            sourceToDestination.put(itemSlot, slot);
+            remainingItems.remove(stack);
+
+            if (fillSlot(sourceToDestination, stacks, remainingItems, validItems, slotOrder)) {
+                return true;
+            }
+
+            sourceToDestination.remove(itemSlot, slot);
+            remainingItems.add(stack);
+        }
         return false;
     }
 

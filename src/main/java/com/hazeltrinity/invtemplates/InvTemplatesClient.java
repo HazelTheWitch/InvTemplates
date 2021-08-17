@@ -14,11 +14,15 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.impl.networking.ClientSidePacketRegistryImpl;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.hud.ChatHud;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.Formatting;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
@@ -30,10 +34,73 @@ public class InvTemplatesClient implements ClientModInitializer {
     public static InvTemplate TEMPLATE;
 
     private static KeyBinding sortKeyBinding;
+    private static KeyBinding reloadConfigBinding;
+
+    private static final int RELOAD_COOLDOWN = 100;
+    private static final int SORT_COOLDOWN = 40;
+
+    private static int reloadTimeLeft = 0;
+    private static int sortTimeLeft = 0;
 
     @Override
     public void onInitializeClient() {
         InvTemplates.LOGGER.info("Initializing Client");
+        reloadConfig();
+
+        ClientSidePacketRegistryImpl.INSTANCE.register(InvTemplates.SORTED_PACKET_ID,
+                (packetContext, attachedData) -> packetContext.getTaskQueue().execute(() -> {
+                    MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(new TranslatableText("invtemplates.chat.sorted").formatted(Formatting.GRAY));
+                }));
+
+        sortKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.invtemplates.sort",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_T,
+                "category.invtemplates.sorting"
+        ));
+
+        reloadConfigBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.invtemplates.reload",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_R,
+                "category.invtemplates.sorting"
+        ));
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            boolean doSortInventory = false;
+            boolean doReloadConfig = false;
+
+            while (sortKeyBinding.wasPressed()) {
+                doSortInventory = true;
+            }
+
+            while (reloadConfigBinding.wasPressed()) {
+                doReloadConfig = true;
+            }
+
+            if (reloadTimeLeft > 0)
+                reloadTimeLeft -= 1;
+
+            if (sortTimeLeft > 0)
+                sortTimeLeft -= 1;
+
+            if (reloadTimeLeft == 0 && doReloadConfig) {
+                InvTemplates.LOGGER.info("Reloading Config");
+                reloadConfig();
+                client.inGameHud.getChatHud().addMessage(new TranslatableText("invtemplates.chat.reloaded").formatted(Formatting.GRAY));
+
+                reloadTimeLeft = RELOAD_COOLDOWN;
+            }
+
+            if (sortTimeLeft == 0 && doSortInventory) {
+                sortInventory(true);
+
+                sortTimeLeft = SORT_COOLDOWN;
+            }
+        });
+    }
+
+    private static void reloadConfig() {
         InvTemplates.LOGGER.info("Reading Config");
         TEMPLATE = InvTemplate.loadFromJSON("InvTemplates.json");
         InvTemplates.LOGGER.info("Verifying Template");
@@ -45,22 +112,14 @@ public class InvTemplatesClient implements ClientModInitializer {
         } catch (IOException e) {
             InvTemplates.LOGGER.error("Could not write to config file");
         }
-
-        sortKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.invtemplates.sort",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_R,
-                "category.invtemplates.sorting"
-        ));
-
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (sortKeyBinding.wasPressed()) {
-                sortInventory(true);
-            }
-        });
     }
 
     public static void sortInventory(boolean sortPlayer) {
+        if (sortPlayer)
+            InvTemplates.LOGGER.info("Sorting Inventory");
+        else
+            InvTemplates.LOGGER.info("Sorting Container");
+
         PlayerEntity player = MinecraftClient.getInstance().player;
 
         if (player == null) {

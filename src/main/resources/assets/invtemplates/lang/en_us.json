@@ -1,4 +1,7 @@
 {
   "key.invtemplates.sort": "Sort",
-  "category.invtemplates.sorting": "Sorting"
+  "key.invtemplates.reload": "Reload Config",
+  "category.invtemplates.sorting": "Sorting",
+  "invtemplates.chat.reloaded": "Config Reloaded.",
+  "invtemplates.chat.sorted": "Sorted Inventory."
 }

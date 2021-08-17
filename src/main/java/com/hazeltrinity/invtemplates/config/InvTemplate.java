@@ -7,6 +7,7 @@ import com.google.gson.annotations.Expose;
 import com.hazeltrinity.invtemplates.InvTemplates;
 import com.hazeltrinity.invtemplates.config.impl.*;
 import com.hazeltrinity.invtemplates.config.impl.sorting.AlphabeticallySortedKeyItem;
+import com.hazeltrinity.invtemplates.config.impl.sorting.QuantitySortedKeyItem;
 import com.hazeltrinity.invtemplates.inventory.KeySlot;
 import com.hazeltrinity.invtemplates.inventory.SortableInventory;
 import com.hazeltrinity.invtemplates.inventory.SortedInventory;
@@ -27,6 +28,7 @@ public class InvTemplate {
     private static final RuntimeTypeAdapterFactory<KeyItem> RUNTIME_TYPE_ADAPTER_FACTORY = RuntimeTypeAdapterFactory
             .of(KeyItem.class, "type")
             .registerSubtype(AlphabeticallySortedKeyItem.class, "alphabetically-sorting")
+            .registerSubtype(QuantitySortedKeyItem.class, "quantity-sorting")
             .registerSubtype(EmptyKeyItem.class, "empty")
             .registerSubtype(ItemKeyItem.class, "item")
             .registerSubtype(MultiItemKeyItem.class, "multi-item")

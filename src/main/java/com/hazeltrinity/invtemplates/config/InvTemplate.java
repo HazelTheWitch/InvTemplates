@@ -10,18 +10,18 @@ import com.hazeltrinity.invtemplates.config.impl.sorting.AlphabeticallySortedKey
 import com.hazeltrinity.invtemplates.config.impl.sorting.QuantitySortedKeyItem;
 import com.hazeltrinity.invtemplates.inventory.KeySlot;
 import com.hazeltrinity.invtemplates.inventory.SortableInventory;
-import com.hazeltrinity.invtemplates.inventory.SortedInventory;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.NoSuchElementException;
 
 public class InvTemplate {
     @Expose(serialize = false, deserialize = false)
@@ -70,7 +70,7 @@ public class InvTemplate {
     public SortableInventory sort() {
         HashMap<Integer, KeySlot> slots = new HashMap<>();
 
-        for (int row = 3; row >= 0; row --) {
+        for (int row = 3; row >= 0; row--) {
             int length = row == 3 ? 10 : 9;
 
             for (int column = 0; column < length; column++) {
@@ -101,11 +101,11 @@ public class InvTemplate {
     public void verify() {
         if (templateInventory.length < 4) {
             String[] newInventory = new String[4];
-            for (int i = 0; i < 4 - templateInventory.length; i ++) {
+            for (int i = 0; i < 4 - templateInventory.length; i++) {
                 newInventory[i] = DEFAULT_ROW;
             }
 
-            for (int i = 4 - templateInventory.length; i < 4; i ++) {
+            for (int i = 4 - templateInventory.length; i < 4; i++) {
                 newInventory[i] = templateInventory[i - 4 + templateInventory.length];
             }
 
@@ -120,7 +120,7 @@ public class InvTemplate {
 
         HashSet<Character> charsUsed = new HashSet<>();
 
-        for (int i = 0; i < 4; i ++) {
+        for (int i = 0; i < 4; i++) {
             String bar = templateInventory[i];
 
             int length = i == 3 ? 10 : 9;
@@ -137,14 +137,14 @@ public class InvTemplate {
         }
 
         for (String bar : templateInventory) {
-            for (int i = 0; i < bar.length(); i ++) {
+            for (int i = 0; i < bar.length(); i++) {
                 charsUsed.add(bar.charAt(i));
             }
         }
 
         HashSet<Character> notPrioritized = new HashSet<>(charsUsed);
 
-        for (int i = 0; i < priorities.length(); i ++) {
+        for (int i = 0; i < priorities.length(); i++) {
             notPrioritized.remove(priorities.charAt(i));
         }
 
@@ -173,6 +173,7 @@ public class InvTemplate {
 
     /**
      * Writes this config file to JSON.
+     *
      * @param fileName the file name to write to
      * @throws IOException if it can not create the new file
      */
@@ -199,6 +200,7 @@ public class InvTemplate {
 
     /**
      * Reads a template from a config file in JSON or returns the default if there is an error.
+     *
      * @param fileName the file name to read from
      */
     public static InvTemplate loadFromJSON(String fileName) {

@@ -18,7 +18,7 @@ public class MultiItemKeyItem extends KeyItem {
     @Override
     public void verify() {
         if (identifiers.length == 0) {
-            identifiers = new String[]{ "minecraft:poppy" };
+            identifiers = new String[]{"minecraft:poppy"};
         }
     }
 
@@ -31,7 +31,7 @@ public class MultiItemKeyItem extends KeyItem {
     public SortingKey<Integer> valueOf(ItemStack stack) {
         int index = identifiers.length;
 
-        for (int i = 0; i < identifiers.length; i ++) {
+        for (int i = 0; i < identifiers.length; i++) {
             if (Registry.ITEM.getId(stack.getItem()).toString().equals(identifiers[i])) {
                 index = i;
                 break;

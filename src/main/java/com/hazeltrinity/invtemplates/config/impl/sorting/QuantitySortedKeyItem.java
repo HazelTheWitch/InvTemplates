@@ -15,7 +15,9 @@ public class QuantitySortedKeyItem extends KeyItem {
     }
 
     @Override
-    public SortingKey<Integer> infinity() { return new SortingKey<>(); }
+    public SortingKey<Integer> infinity() {
+        return new SortingKey<>();
+    }
 
     @Override
     public SortingKey<Integer> valueOf(ItemStack stack) {
@@ -24,10 +26,10 @@ public class QuantitySortedKeyItem extends KeyItem {
         key[0] = -stack.getCount();
 
         char c;
-        for (int i = 0; i < name.length(); i ++) {
+        for (int i = 0; i < name.length(); i++) {
             c = name.charAt(i);
 
-            key[i + 1] = (int)c;
+            key[i + 1] = (int) c;
         }
 
         return new SortingKey<>(key);

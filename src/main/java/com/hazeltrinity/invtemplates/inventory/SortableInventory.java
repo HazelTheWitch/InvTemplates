@@ -1,11 +1,8 @@
 package com.hazeltrinity.invtemplates.inventory;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.hazeltrinity.invtemplates.config.KeyItem;
 import com.hazeltrinity.invtemplates.config.SortingKey;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import java.util.*;
@@ -40,7 +37,7 @@ public class SortableInventory {
         Collections.sort(prioritiesList);
 
         this.priorities = new int[prioritiesList.size()];
-        for (int i = 0; i < prioritiesList.size(); i ++) {
+        for (int i = 0; i < prioritiesList.size(); i++) {
             this.priorities[i] = prioritiesList.get(i);
         }
     }
@@ -79,7 +76,7 @@ public class SortableInventory {
         // Create a mapping of item stacks to slots
         HashMap<ItemStack, Integer> stacks = new HashMap<>();
 
-        for (int slot = 0; slot < itemsList.size(); slot ++) {
+        for (int slot = 0; slot < itemsList.size(); slot++) {
             if (itemsList.get(slot) != ItemStack.EMPTY)
                 stacks.put(itemsList.get(slot), slot);
         }
@@ -90,7 +87,7 @@ public class SortableInventory {
         // Create a list of valid items in each slot
         HashMap<Integer, ValidItems> validItems = new HashMap<>();
 
-        for (int slot = 0; slot < inventory.size(); slot ++) {
+        for (int slot = 0; slot < inventory.size(); slot++) {
             KeySlot keySlot = inventorySlots.get(slot);
 
             if (keySlot != null && !keySlot.ignore()) {
@@ -111,7 +108,7 @@ public class SortableInventory {
         ArrayDeque<Integer> slotOrder = new ArrayDeque<>(inventory.size());
 
         for (int priority : priorities) {
-            for (int slot = 0; slot < inventory.size(); slot ++) {
+            for (int slot = 0; slot < inventory.size(); slot++) {
                 KeySlot keySlot = inventorySlots.get(slot);
                 if (keySlot != null && !keySlot.ignore() && keySlot.getPriority() == priority) {
                     slotOrder.add(slot);
@@ -182,16 +179,16 @@ public class SortableInventory {
 
         inventory.clear();
 
-        for (int i = 0; i < items.size(); i ++) {
+        for (int i = 0; i < items.size(); i++) {
             inventory.setStack(i, items.get(i));
         }
     }
 
     protected static ArrayList<ItemStack> clumpInventory(ArrayList<ItemStack> items) {
-        for (int i = 0; i < items.size(); i ++) {
+        for (int i = 0; i < items.size(); i++) {
             ItemStack itemA = items.get(i);
 
-            for (int j =  i + 1; j < items.size(); j ++) {
+            for (int j = i + 1; j < items.size(); j++) {
                 ItemStack itemB = items.get(j);
 
                 if (ItemStack.canCombine(itemA, itemB)) {
@@ -206,7 +203,7 @@ public class SortableInventory {
             }
         }
 
-        for (int i = 0; i < items.size(); i ++) {
+        for (int i = 0; i < items.size(); i++) {
             if (items.get(i).getCount() == 0) {
                 items.set(i, ItemStack.EMPTY);
             }

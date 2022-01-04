@@ -17,6 +17,7 @@ public class KeyItem {
 
     /**
      * Get a sorting key representing infinity.
+     *
      * @return an infinite SortingKey
      */
     public SortingKey<?> infinity() {
@@ -25,6 +26,7 @@ public class KeyItem {
 
     /**
      * Get the value of an ItemStack
+     *
      * @param stack the stack
      * @return the value of the stack
      */

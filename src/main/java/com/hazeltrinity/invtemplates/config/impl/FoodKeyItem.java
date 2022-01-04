@@ -25,6 +25,6 @@ public class FoodKeyItem extends KeyItem {
             return new SortingKey<>(false, 0f, 0f);
         }
 
-        return new SortingKey<>(true, -(float)food.getHunger(), -food.getSaturationModifier());
+        return new SortingKey<>(true, -(float) food.getHunger(), -food.getSaturationModifier());
     }
 }

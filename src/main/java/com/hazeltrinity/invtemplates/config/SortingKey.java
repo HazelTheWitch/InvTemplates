@@ -1,9 +1,7 @@
 package com.hazeltrinity.invtemplates.config;
 
-import com.google.common.collect.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -59,7 +57,7 @@ public class SortingKey<T extends Comparable<T>> {
         List<T> myKeys = List.copyOf(keys);
         List<T> otherKeys = List.copyOf(o.getKeys());
 
-        for (int i = 0; i < maxSize; i ++) {
+        for (int i = 0; i < maxSize; i++) {
             if (myKeys.size() <= i) {
                 return -1;
             }
@@ -68,7 +66,7 @@ public class SortingKey<T extends Comparable<T>> {
                 return 1;
             }
 
-            int comparedValue = myKeys.get(i).compareTo((T)otherKeys.get(i));
+            int comparedValue = myKeys.get(i).compareTo((T) otherKeys.get(i));
             if (comparedValue < 0) {
                 return -1;
             } else if (comparedValue > 0) {

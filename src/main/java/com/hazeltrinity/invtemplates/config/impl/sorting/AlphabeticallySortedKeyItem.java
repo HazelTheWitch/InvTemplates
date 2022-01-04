@@ -1,10 +1,8 @@
 package com.hazeltrinity.invtemplates.config.impl.sorting;
 
 import com.google.gson.annotations.Expose;
-import com.hazeltrinity.invtemplates.InvTemplates;
 import com.hazeltrinity.invtemplates.config.KeyItem;
 import com.hazeltrinity.invtemplates.config.SortingKey;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 public class AlphabeticallySortedKeyItem extends KeyItem {

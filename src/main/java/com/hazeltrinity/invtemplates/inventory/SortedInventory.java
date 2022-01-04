@@ -3,11 +3,10 @@ package com.hazeltrinity.invtemplates.inventory;
 import com.google.gson.Gson;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import org.lwjgl.system.CallbackI;
 
-import java.util.*;
-
-import static com.hazeltrinity.invtemplates.inventory.SortableInventory.clumpInventory;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * A final sorted inventory which contains information on where all the items end up.
@@ -22,7 +21,7 @@ public class SortedInventory {
     public SortedInventory(int... destinations) {
         this();
 
-        for (int i = 0; i < destinations.length; i ++) {
+        for (int i = 0; i < destinations.length; i++) {
             set(i, destinations[i]);
         }
     }
@@ -70,7 +69,7 @@ public class SortedInventory {
             newSorted.set(source, destinations.get(source));
         }
 
-        for (int i = 0; i < size; i ++) {
+        for (int i = 0; i < size; i++) {
             if (!newSorted.contains(i)) {
                 newSorted.set(i, i);
             }
@@ -95,6 +94,7 @@ public class SortedInventory {
 
     /**
      * This is only run on the logical server side.
+     *
      * @param inventory the inventory to apply this sorted state to
      * @return true if the inventory was applied
      */
